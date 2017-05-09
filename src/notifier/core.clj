@@ -58,7 +58,8 @@
           type (or (tray-msg-type-map type) (:none tray-msg-type-map))]
       (-> (create-trayicon)
           (display-message message title type)
-          (remove-trayicon-in-future 5000)))))
+          (remove-trayicon-in-future 5000)
+          (deref)))))
 
 (defn -main
   "I don't do a whole lot ... yet."
