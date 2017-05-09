@@ -5,11 +5,7 @@
 ;;; Inspired by 
 ;;; https://github.com/stathissideris/dotfiles/blob/master/.emacs.d/clojure/clojure-dev.clj
 
-;;; Problems with the following code:
-;;; it wants to allocate an icon, even if I only want to flash a message
-;;; my "flash a message" routine will need to check & ensure that an icon is attached.
-
-(defn icon->image [icon]
+(defn- icon->image [icon]
   (let [w (.getIconWidth icon)
         h (.getIconHeight icon)
         img (-> (java.awt.GraphicsEnvironment/getLocalGraphicsEnvironment)
@@ -21,36 +17,53 @@
     (.dispose gfx)
     img))
 
-(defn remove-all-tray-icons []
+(defn- remove-all-tray-icons []
   (let [tray (java.awt.SystemTray/getSystemTray)]
    (doseq [i (seq (.getTrayIcons tray))]
      (.remove tray i))))
 
-(def tray-icon
-  (try
-    (let [icon (java.awt.TrayIcon.
-                (icon->image (.getIcon (javax.swing.UIManager/getDefaults) "FileView.computerIcon"))
-                #_(.getImage (java.awt.Toolkit/getDefaultToolkit) "tray.gif")
-                "REPL notifications" nil)]
-      (.add (java.awt.SystemTray/getSystemTray) icon)
-      icon)
-    (catch Exception e)))
-
-(def tray-msg-type-map
+(def ^:private tray-msg-type-map
   {:none java.awt.TrayIcon$MessageType/NONE
    :info java.awt.TrayIcon$MessageType/INFO
    :warning java.awt.TrayIcon$MessageType/WARNING
    :error java.awt.TrayIcon$MessageType/ERROR})
 
+(defn- create-trayicon
+  "Create a tray icon."
+  []
+  (let [icon (java.awt.TrayIcon.
+              (icon->image (.getIcon (javax.swing.UIManager/getDefaults) "FileView.computerIcon"))
+              "Clojure" nil)]
+    (.add (java.awt.SystemTray/getSystemTray) icon)
+    icon))
+
+(defn- display-message
+  "Send a message to the trayIcon."
+  [^java.awt.TrayIcon trayicon message & [title type]]
+  (.displayMessage trayicon title message type)
+  trayicon)
+
+(defn- remove-trayicon-in-future
+  "Remove the trayicon, after a delay."
+  [^java.awt.TrayIcon trayicon delayMilliseconds]
+  (future
+    (Thread/sleep delayMilliseconds)
+    (.remove (java.awt.SystemTray/getSystemTray) trayicon)))
+
 (defn notify
-  "Send a notification to the system tray."
-  [msg & [title type]]
-  (let [type (or type :none)
-        type (or (tray-msg-type-map type) (:none tray-msg-type-map))]
-   (.displayMessage tray-icon title msg type))
-  msg)
+  "Show a notification in the system tray / notification area."
+  [message & [title type]]
+  (when (java.awt.SystemTray/isSupported)
+    (let [type (or type :none)
+          type (or (tray-msg-type-map type) (:none tray-msg-type-map))]
+      (-> (create-trayicon)
+          (display-message message title type)
+          (remove-trayicon-in-future 5000)))))
 
 (defn -main
   "I don't do a whole lot ... yet."
-  [& args]
-  (notify "title" "message" :info))
+  [& [message title type]]
+  (let [message (or message "Example Message")
+        title (or title "Example Title")
+        type (keyword type)]
+    (notify title message type)))
