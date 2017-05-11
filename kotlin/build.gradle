@@ -3,7 +3,7 @@
 // https://docs.gradle.org/current/userguide/userguide.html
 
 buildscript {
-    ext.kotlin_version = '1.0.6'
+    ext.kotlin_version = '1.1.0'
     repositories {
         mavenCentral()
     }
@@ -14,12 +14,12 @@ buildscript {
 
 plugins {
     id 'application'
-    // id 'com.github.johnrengelman.shadow' version '1.2.2'
+    id 'com.github.johnrengelman.shadow' version '1.2.4'
 }
 
 apply plugin: 'kotlin'
 
-mainClassName = 'demo.HelloWorldKt'
+mainClassName = 'demo.NotifierKt'
 
 defaultTasks 'run'
 
