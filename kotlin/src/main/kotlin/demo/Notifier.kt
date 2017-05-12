@@ -1,32 +1,54 @@
 package demo
 
-import java.awt.image.BufferedImage
-import java.awt.GraphicsDevice
 import java.awt.GraphicsEnvironment
 import java.awt.SystemTray
 import java.awt.TrayIcon
+import java.awt.image.BufferedImage
+import java.lang.Thread
 import javax.swing.Icon
 import javax.swing.UIManager
 
 fun main(args: Array<String>) {
     println("Creating system tray icon...")
     if (SystemTray.isSupported()) {
-        var icon = createTrayIcon()
+        val icon = createTrayIcon()
         icon.displayMessage("Title", "Message", TrayIcon.MessageType.INFO)
-        Thread.sleep(3000)
-        var sysTray = SystemTray.getSystemTray()
+//        sleep(3000)
+//        val sysTray = SystemTray.getSystemTray()
+//        sysTray.remove(icon)
+        val runnable = TrayIconRunner(icon, 3000)
+        val t = Thread(runnable)
+        t.isDaemon = true
+        t.start()
+    }
+}
+
+class TrayIconRunner : Runnable {
+
+    val icon: TrayIcon
+    val delayMillis: Long
+
+    constructor(icon: TrayIcon, delayMillis: Long = 3000) {
+        this.icon = icon
+        this.delayMillis = delayMillis
+    }
+
+    override fun run() {
+        Thread.sleep(delayMillis);
+        val sysTray = SystemTray.getSystemTray()
         sysTray.remove(icon)
     }
 }
 
+
 fun iconToImage(icon: Icon): BufferedImage {
-    var w = icon.getIconWidth()
-    var h = icon.getIconHeight()
-    var ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
-    var gd = ge.getDefaultScreenDevice()
-    var gc = gd.getDefaultConfiguration()
-    var img = gc.createCompatibleImage(w, h)
-    var gfx = img.createGraphics()
+    val w = icon.iconWidth
+    val h = icon.iconHeight
+    val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
+    val gd = ge.defaultScreenDevice
+    val gc = gd.defaultConfiguration
+    val img = gc.createCompatibleImage(w, h)
+    val gfx = img.createGraphics()
     icon.paintIcon(null, gfx, 0, 0)
     gfx.dispose()
     return img
